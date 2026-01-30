@@ -1,0 +1,44 @@
+{
+  "name": "context-reminder-desktop",
+  "version": "1.0.0",
+  "description": "Context Reminder Desktop Companion",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-win": "electron-builder --win",
+    "build-mac": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.contextreminder.desktop",
+    "productName": "Context Reminder",
+    "files": [
+      "main.js",
+      "preload.js",
+      "settings.html",
+      "settings.js",
+      "icon.png"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icon.png",
+      "category": "public.app-category.productivity"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "active-win": "^8.1.0",
+    "dotenv": "^17.2.3",
+    "electron": "^28.1.0",
+    "node-notifier": "^10.0.1"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.1"
+  }
+}
