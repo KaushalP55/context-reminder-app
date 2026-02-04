@@ -1,44 +1,71 @@
 {
   "name": "context-reminder-desktop",
   "version": "1.0.0",
-  "description": "Context Reminder Desktop Companion",
+  "description": "Context Reminder Desktop Companion - Get reminders when you open specific apps",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build-win": "electron-builder --win",
-    "build-mac": "electron-builder --mac"
+    "build": "electron-builder --win --publish never",
+    "build-win": "electron-builder --win --publish never",
+    "build-mac": "electron-builder --mac --publish never",
+    "build-all": "electron-builder --win --mac --publish never"
   },
   "build": {
     "appId": "com.contextreminder.desktop",
     "productName": "Context Reminder",
+    "copyright": "Copyright © 2024",
     "files": [
       "main.js",
       "preload.js",
       "settings.html",
       "settings.js",
-      "icon.png"
+      "icon.png",
+      "node_modules/**/*",
+      "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!node_modules/**/*.{ts,map}"
+    ],
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": ".env"
+      }
     ],
     "win": {
-      "target": "nsis",
-      "icon": "icon.png"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "icon.png",
+      "artifactName": "ContextReminder-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Context Reminder",
+      "runAfterFinish": true
     },
     "mac": {
       "target": "dmg",
       "icon": "icon.png",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "artifactName": "ContextReminder-${version}.${ext}"
     }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["reminder", "context", "productivity", "electron"],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "active-win": "^8.1.0",
-    "dotenv": "^17.2.3",
-    "electron": "^28.1.0",
+    "dotenv": "^17.0.0",
     "node-notifier": "^10.0.1"
   },
   "devDependencies": {
+    "electron": "^28.1.0",
     "electron-builder": "^24.9.1"
   }
 }

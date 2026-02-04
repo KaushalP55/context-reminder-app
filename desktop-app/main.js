@@ -11,7 +11,37 @@ const { exec } = require('child_process');
 // ============================================
 // CONFIGURATION
 // ============================================
-require('dotenv').config();
+
+// Handle dotenv for both development and packaged app
+const isDev = !app.isPackaged;
+let envLoaded = false;
+
+if (isDev) {
+  require('dotenv').config();
+  envLoaded = true;
+} else {
+  // Try multiple locations for .env in packaged app
+  const possiblePaths = [
+    path.join(process.resourcesPath, '.env'),
+    path.join(process.resourcesPath, 'app', '.env'),
+    path.join(path.dirname(process.execPath), '.env'),
+    path.join(app.getPath('userData'), '.env'),
+    path.join(process.env.APPDATA || '', 'context-reminder-desktop', '.env')
+  ];
+  
+  for (const envPath of possiblePaths) {
+    if (fs.existsSync(envPath)) {
+      require('dotenv').config({ path: envPath });
+      console.log('Loaded .env from:', envPath);
+      envLoaded = true;
+      break;
+    }
+  }
+  
+  if (!envLoaded) {
+    console.error('Could not find .env file. Checked:', possiblePaths);
+  }
+}
 
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 const APP_CACHE_PATH = path.join(app.getPath('userData'), 'app-cache.json');
@@ -37,7 +67,7 @@ function showReminderPopup(message) {
   
   const popup = new BrowserWindow({
     width: 420,
-    height: 180,
+    height: 160,
     x: require('electron').screen.getPrimaryDisplay().workAreaSize.width - 440,
     y: 20,
     frame: false,
@@ -71,59 +101,68 @@ function showReminderPopup(message) {
           background: transparent;
         }
         .popup {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: #FFFFFF;
           border-radius: 16px;
           padding: 24px;
-          color: white;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-          animation: slideIn 0.3s ease-out, pulse 2s ease-in-out infinite;
-          border: 2px solid rgba(255,255,255,0.3);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.1);
+          animation: slideIn 0.3s ease-out;
+          border-left: 4px solid #3B82F6;
         }
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
         }
-        @keyframes pulse {
-          0%, 100% { box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
-          50% { box-shadow: 0 10px 60px rgba(102, 126, 234, 0.6); }
+        .header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
         }
+        .icon-wrapper {
+          width: 44px;
+          height: 44px;
+          background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .icon { font-size: 22px; }
         .title {
           font-size: 16px;
           font-weight: 700;
-          margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
+          color: #1E293B;
         }
-        .icon { font-size: 24px; }
+        .subtitle {
+          font-size: 12px;
+          color: #64748B;
+        }
         .message {
-          font-size: 18px;
-          line-height: 1.4;
-          margin-bottom: 16px;
-          font-weight: 500;
+          font-size: 17px;
+          line-height: 1.5;
+          color: #334155;
+          padding: 12px 16px;
+          background: #F1F5F9;
+          border-radius: 10px;
         }
-        .close {
-          background: rgba(255,255,255,0.25);
-          border: none;
-          color: white;
-          padding: 10px 24px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          transition: background 0.2s;
-        }
-        .close:hover { background: rgba(255,255,255,0.4); }
       </style>
     </head>
     <body>
       <div class="popup">
-        <div class="title"><span class="icon">🔔</span> Reminder</div>
+        <div class="header">
+          <div class="icon-wrapper">
+            <span class="icon">🔔</span>
+          </div>
+          <div>
+            <div class="title">Reminder</div>
+            <div class="subtitle">Context Reminder</div>
+          </div>
+        </div>
         <div class="message">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-        <button class="close" onclick="window.close()">Dismiss</button>
       </div>
       <script>
-        setTimeout(() => window.close(), 30000);
+        setTimeout(() => window.close(), 15000);
       </script>
     </body>
     </html>
@@ -131,10 +170,10 @@ function showReminderPopup(message) {
 
   popup.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   
-  // Auto-close after 30 seconds
+  // Auto-close after 15 seconds
   setTimeout(() => {
     if (!popup.isDestroyed()) popup.close();
-  }, 30000);
+  }, 15000);
 }
 
 // ============================================
@@ -687,18 +726,22 @@ function createSettingsWindow() {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 500,
-    height: 400,
+    width: 600,
+    height: 750,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: true,
+      contextIsolation: false
     },
     title: 'Context Reminder Settings',
     resizable: false
   });
 
   settingsWindow.loadFile('settings.html');
+  settingsWindow.setMenuBarVisibility(false);
+  
+  // Open DevTools for debugging (remove this line later)
+  // settingsWindow.webContents.openDevTools();
+  
   settingsWindow.on('closed', () => { settingsWindow = null; });
   settingsWindow.webContents.on('did-finish-load', () => {
     settingsWindow.webContents.send('load-config', config);
